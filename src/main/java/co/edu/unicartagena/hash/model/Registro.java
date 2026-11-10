@@ -1,19 +1,18 @@
 package co.edu.unicartagena.hash.model;
 
-import java.util.Objects;
-
 /**
- * Representa un registro del archivo MOCK_DATA.csv / PLATES.csv:
- * plate ; first_name ; last_name ; email; gender
+ * Representa un registro del archivo MOCK_DATA.csv / PLATES.csv.
+ * Soporta tanto 4 columnas (plate;first_name;last_name;gender) como
+ * 5 columnas (plate;first_name;last_name;email;gender).
  */
 public class Registro {
 
-    private final String plate;
-    private final String firstName;
-    private final String lastName;
-    private final String email;
-    private final String gender;
-    private final long k;
+    private String plate;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String gender;
+    private long llaveK;
 
     public Registro(String plate, String firstName, String lastName, String email, String gender) {
         this.plate = plate != null ? plate.trim() : "";
@@ -21,14 +20,40 @@ public class Registro {
         this.lastName = lastName != null ? lastName.trim() : "";
         this.email = email != null ? email.trim() : "";
         this.gender = gender != null ? gender.trim() : "";
-        this.k = FuncionHash.calcularLlaveRadix2(this.plate);
+        this.llaveK = FuncionHash.calcularLlaveRadix2(this.plate);
     }
 
-    /**
-     * Constructor auxiliar para búsquedas/eliminaciones por id (plate).
-     */
     public Registro(String plate) {
-        this(plate, "", "", "", "");
+        this.plate = plate != null ? plate.trim() : "";
+        this.firstName = "";
+        this.lastName = "";
+        this.email = "";
+        this.gender = "";
+        this.llaveK = FuncionHash.calcularLlaveRadix2(this.plate);
+    }
+
+    public static Registro desdeCsv(String linea) {
+        if (linea == null || linea.trim().isEmpty()) {
+            return null;
+        }
+        String[] partes = linea.split(";");
+        if (partes.length < 4) {
+            return null;
+        }
+        if (partes[0].trim().equalsIgnoreCase("plate")) {
+            return null; // Ignorar fila de encabezado si existe
+        }
+        if (partes.length == 4) {
+            return new Registro(partes[0], partes[1], partes[2], "", partes[3]);
+        }
+        return new Registro(partes[0], partes[1], partes[2], partes[3], partes[4]);
+    }
+
+    public String toCsv() {
+        if (email == null || email.isEmpty()) {
+            return plate + ";" + firstName + ";" + lastName + ";" + gender;
+        }
+        return plate + ";" + firstName + ";" + lastName + ";" + email + ";" + gender;
     }
 
     public String getPlate() {
@@ -51,16 +76,8 @@ public class Registro {
         return gender;
     }
 
-    public long getK() {
-        return k;
-    }
-
-    public int getHash(FuncionHash.Metodo metodo) {
-        return FuncionHash.calcularHash(k, metodo);
-    }
-
-    public String toCsvLine() {
-        return plate + ";" + firstName + ";" + lastName + ";" + email + ";" + gender;
+    public long getLlaveK() {
+        return llaveK;
     }
 
     @Override
@@ -68,20 +85,20 @@ public class Registro {
         if (this == obj) {
             return true;
         }
-        if (obj == null || getClass() != obj.getClass()) {
+        if (!(obj instanceof Registro)) {
             return false;
         }
-        Registro other = (Registro) obj;
-        return this.plate != null && this.plate.equalsIgnoreCase(other.plate);
+        Registro otro = (Registro) obj;
+        return this.plate.equalsIgnoreCase(otro.plate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.plate);
+        return plate.toUpperCase().hashCode();
     }
 
     @Override
     public String toString() {
-        return plate + " | " + firstName + " " + lastName + " | " + email + " | " + gender + " (k=" + k + ")";
+        return plate + " - " + firstName + " " + lastName;
     }
 }

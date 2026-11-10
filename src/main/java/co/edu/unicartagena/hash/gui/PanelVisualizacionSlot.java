@@ -7,54 +7,47 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.util.List;
 import javax.swing.JPanel;
 
 /**
- * Panel gráfico que dibuja la representación visual del slot seleccionado en la Tabla Hash T:
- * - En modo Lista Enlazada Simple: dibuja el vector vertical T[slot] -> [Placa 1] -> [Placa 2] -> ...
- *   tal como se especifica en la Figura 1 y la página 3 del enunciado.
- * - En modo Árbol Binario: dibuja el Árbol Binario de Búsqueda almacenado en T[slot].
+ * Panel gráfico en blanco y negro que dibuja los nodos del slot seleccionado
+ * como Lista Enlazada Simple (igual al esquema del PDF) o como Árbol Binario.
  */
 public class PanelVisualizacionSlot extends JPanel {
 
     private int slotSeleccionado = -1;
-    private List<Registro> registrosSlot;
-    private BinaryTree arbolSlot;
     private boolean modoArbol = false;
-    private String placaResaltada = null;
+    private List<Registro> registrosLista;
+    private BinaryTree arbolSlot;
+    private String plateResaltado = null;
 
     public PanelVisualizacionSlot() {
         setBackground(Color.WHITE);
-        setPreferredSize(new Dimension(780, 230));
+        setPreferredSize(new Dimension(650, 210));
     }
 
-    public void actualizarVistaLista(int slot, List<Registro> registros, String placaResaltada) {
+    public void mostrarSlotLista(int slot, List<Registro> registros, String resaltado) {
         this.slotSeleccionado = slot;
-        this.registrosSlot = registros;
-        this.arbolSlot = null;
         this.modoArbol = false;
-        this.placaResaltada = placaResaltada;
-        int anchoNecesario = 160 + (registros != null ? registros.size() * 175 : 0);
-        setPreferredSize(new Dimension(Math.max(760, anchoNecesario), 220));
+        this.registrosLista = registros;
+        this.arbolSlot = null;
+        this.plateResaltado = resaltado;
+        int ancho = 120 + (registros != null ? registros.size() * 145 : 0);
+        setPreferredSize(new Dimension(Math.max(650, ancho), 200));
         revalidate();
         repaint();
     }
 
-    public void actualizarVistaArbol(int slot, BinaryTree arbol, List<Registro> registros, String placaResaltada) {
+    public void mostrarSlotArbol(int slot, BinaryTree arbol, String resaltado) {
         this.slotSeleccionado = slot;
-        this.arbolSlot = arbol;
-        this.registrosSlot = registros;
         this.modoArbol = true;
-        this.placaResaltada = placaResaltada;
-        int alturaArbol = arbol != null ? arbol.getAltura() : 0;
-        int anchoNecesario = Math.max(660, (1 << Math.min(alturaArbol + 1, 5)) * 105);
-        int altoNecesario = Math.max(200, (alturaArbol + 1) * 56 + 44);
-        setPreferredSize(new Dimension(anchoNecesario, altoNecesario));
+        this.arbolSlot = arbol;
+        this.registrosLista = null;
+        this.plateResaltado = resaltado;
+        setPreferredSize(new Dimension(650, 195));
         revalidate();
         repaint();
     }
@@ -62,15 +55,11 @@ public class PanelVisualizacionSlot extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setColor(Color.BLACK);
 
         if (slotSeleccionado < 0) {
-            g2.setColor(new Color(100, 116, 139));
-            g2.setFont(new Font("SansSerif", Font.ITALIC, 13));
-            g2.drawString("Seleccione un slot en la columna T para visualizar su estructura interna.", 25, 45);
-            g2.dispose();
+            g2.drawString("Seleccione un slot de la lista T para ver sus registros.", 20, 40);
             return;
         }
 
@@ -79,202 +68,126 @@ public class PanelVisualizacionSlot extends JPanel {
         } else {
             dibujarArbolBinario(g2);
         }
-        g2.dispose();
     }
 
     private void dibujarListaEnlazada(Graphics2D g2) {
-        // Encabezado del diagrama
-        g2.setColor(new Color(30, 41, 59));
-        g2.setFont(new Font("SansSerif", Font.BOLD, 13));
-        int cant = registrosSlot != null ? registrosSlot.size() : 0;
-        g2.drawString("Estructura en T[" + slotSeleccionado + "] — Lista Enlazada Simple (" + cant + " registros):", 20, 24);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+        g2.drawString("Slot T[" + slotSeleccionado + "] - Lista Enlazada Simple:", 15, 22);
 
-        // Dibujar columna vertical de slots alrededor del slot seleccionado (estilo página 3 del PDF)
-        int slotX = 25;
-        int slotW = 64;
-        int slotH = 28;
-        int centerY = 105;
+        int xSlot = 20;
+        int yCentro = 85;
 
-        for (int offset = -2; offset <= 2; offset++) {
-            int s = slotSeleccionado + offset;
-            int y = centerY + offset * slotH;
-            if (offset == 0) {
-                g2.setColor(new Color(219, 234, 254));
-                g2.fillRect(slotX, y, slotW, slotH);
-                g2.setColor(new Color(29, 78, 216));
-                g2.setStroke(new BasicStroke(2.0f));
-                g2.drawRect(slotX, y, slotW, slotH);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 13));
-                String txt = String.valueOf(slotSeleccionado);
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(txt, slotX + (slotW - fm.stringWidth(txt)) / 2, y + 19);
-            } else {
-                g2.setColor(new Color(248, 250, 252));
-                g2.fillRect(slotX, y, slotW, slotH);
-                g2.setColor(new Color(148, 163, 184));
-                g2.setStroke(new BasicStroke(1.0f));
-                g2.drawRect(slotX, y, slotW, slotH);
-                if (s >= 0 && s < 256) {
-                    g2.setColor(new Color(148, 163, 184));
-                    g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
-                    String txt = String.valueOf(s);
-                    FontMetrics fm = g2.getFontMetrics();
-                    g2.drawString(txt, slotX + (slotW - fm.stringWidth(txt)) / 2, y + 18);
-                }
-            }
-        }
+        // Dibujar casilla del slot como en la Figura 1 y página 3 del PDF
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        g2.drawRect(xSlot, yCentro - 36, 48, 24);
+        g2.drawRect(xSlot, yCentro - 12, 48, 24);
+        g2.drawRect(xSlot, yCentro + 12, 48, 24);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+        g2.drawString(String.valueOf(slotSeleccionado), xSlot + 12, yCentro + 5);
 
-        if (registrosSlot == null || registrosSlot.isEmpty()) {
-            g2.setColor(new Color(100, 116, 139));
-            g2.setFont(new Font("SansSerif", Font.ITALIC, 13));
-            g2.drawString("───► null (Slot vacío)", slotX + slotW + 15, centerY + 19);
+        if (registrosLista == null || registrosLista.isEmpty()) {
             return;
         }
 
-        int currX = slotX + slotW;
-        int arrowLen = 34;
-        int boxW = 138;
-        int boxH = 52;
-        int boxY = centerY + (slotH - boxH) / 2;
+        int xNodo = xSlot + 78;
+        int anchoNodo = 115;
+        int altoNodo = 36;
+        int yNodo = yCentro - altoNodo / 2;
 
-        for (int i = 0; i < registrosSlot.size(); i++) {
-            Registro r = registrosSlot.get(i);
-            int arrowStartX = currX;
-            int arrowEndX = currX + arrowLen;
-            int arrowY = centerY + slotH / 2;
+        // Flecha desde el slot al primer nodo
+        dibujarFlecha(g2, xSlot + 48, yCentro, xNodo, yCentro);
 
-            // Dibujar flecha
-            g2.setColor(new Color(15, 23, 42));
-            g2.setStroke(new BasicStroke(2.0f));
-            g2.drawLine(arrowStartX, arrowY, arrowEndX, arrowY);
-            int[] px = {arrowEndX, arrowEndX - 8, arrowEndX - 8};
-            int[] py = {arrowY, arrowY - 5, arrowY + 5};
-            g2.fillPolygon(px, py, 3);
+        for (int i = 0; i < registrosLista.size(); i++) {
+            Registro r = registrosLista.get(i);
+            boolean resaltado = plateResaltado != null && plateResaltado.equalsIgnoreCase(r.getPlate());
 
-            int nodeX = arrowEndX;
-            boolean esResaltado = placaResaltada != null && placaResaltada.equalsIgnoreCase(r.getPlate());
-
-            // Caja del Nodo
-            if (esResaltado) {
-                g2.setColor(new Color(254, 240, 138));
+            if (resaltado) {
+                g2.setColor(Color.LIGHT_GRAY);
+                g2.fillRect(xNodo, yNodo, anchoNodo, altoNodo);
+                g2.setColor(Color.BLACK);
+                g2.setStroke(new BasicStroke(2.0f));
             } else {
                 g2.setColor(Color.WHITE);
+                g2.fillRect(xNodo, yNodo, anchoNodo, altoNodo);
+                g2.setColor(Color.BLACK);
+                g2.setStroke(new BasicStroke(1.2f));
             }
-            g2.fillRect(nodeX, boxY, boxW, boxH);
+            g2.drawRect(xNodo, yNodo, anchoNodo, altoNodo);
+            g2.setStroke(new BasicStroke(1.0f));
 
-            g2.setColor(esResaltado ? new Color(202, 138, 4) : new Color(15, 23, 42));
-            g2.setStroke(new BasicStroke(2.2f));
-            g2.drawRect(nodeX, boxY, boxW, boxH);
-
-            // Línea divisoria del puntero sig
-            int ptrX = nodeX + boxW - 18;
-            g2.setStroke(new BasicStroke(1.2f));
-            g2.drawLine(ptrX, boxY, ptrX, boxY + boxH);
-
-            // Placa en negrita (como 05-9165610 en página 3)
-            g2.setColor(new Color(15, 23, 42));
             g2.setFont(new Font("Monospaced", Font.BOLD, 12));
-            String plateTxt = r.getPlate();
-            FontMetrics fmP = g2.getFontMetrics();
-            int textAreaW = boxW - 18;
-            g2.drawString(plateTxt, nodeX + Math.max(4, (textAreaW - fmP.stringWidth(plateTxt)) / 2), boxY + 18);
-
-            // Nombre y k
+            g2.drawString(r.getPlate(), xNodo + 12, yNodo + 16);
             g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-            g2.setColor(new Color(51, 65, 85));
             String nombre = r.getFirstName() + " " + r.getLastName();
-            if (nombre.length() > 17) {
-                nombre = nombre.substring(0, 16) + ".";
+            if (nombre.length() > 16) {
+                nombre = nombre.substring(0, 16);
             }
-            g2.drawString(nombre, nodeX + 6, boxY + 33);
+            g2.drawString(nombre, xNodo + 10, yNodo + 30);
 
-            g2.setColor(new Color(37, 99, 235));
-            g2.setFont(new Font("SansSerif", Font.BOLD, 10));
-            g2.drawString("k=" + r.getK(), nodeX + 6, boxY + 46);
-
-            // Punto central en celda de puntero sig
-            g2.setColor(new Color(15, 23, 42));
-            g2.fillOval(ptrX + 6, arrowY - 3, 6, 6);
-
-            currX = nodeX + boxW;
+            if (i < registrosLista.size() - 1) {
+                dibujarFlecha(g2, xNodo + anchoNodo, yCentro, xNodo + anchoNodo + 25, yCentro);
+            }
+            xNodo += anchoNodo + 25;
         }
-
-        // Flecha final a null
-        int arrowY = centerY + slotH / 2;
-        g2.setColor(new Color(100, 116, 139));
-        g2.setStroke(new BasicStroke(1.5f));
-        g2.drawLine(currX, arrowY, currX + 22, arrowY);
-        g2.setFont(new Font("Monospaced", Font.BOLD, 11));
-        g2.drawString("null", currX + 26, arrowY + 4);
     }
 
     private void dibujarArbolBinario(Graphics2D g2) {
-        g2.setColor(new Color(30, 41, 59));
-        g2.setFont(new Font("SansSerif", Font.BOLD, 13));
-        int cant = arbolSlot != null ? arbolSlot.getNumeroNodos() : 0;
-        int alt = arbolSlot != null ? arbolSlot.getAltura() : 0;
-        g2.drawString("Estructura en T[" + slotSeleccionado + "] — Árbol Binario de Búsqueda (Nodos: " + cant + ", Altura: " + alt + "):", 20, 24);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+        g2.drawString("Slot T[" + slotSeleccionado + "] - Árbol Binario de Búsqueda:", 15, 22);
 
         if (arbolSlot == null || arbolSlot.getRaiz() == null) {
-            g2.setColor(new Color(100, 116, 139));
-            g2.setFont(new Font("SansSerif", Font.ITALIC, 13));
-            g2.drawString("Árbol vacío (raiz = null)", 25, 60);
             return;
         }
-
         int anchoPanel = Math.max(getWidth(), 640);
-        dibujarNodoArbol(g2, arbolSlot.getRaiz(), anchoPanel / 2, 46, Math.max(anchoPanel / 4, 85));
+        dibujarNodoArbol(g2, arbolSlot.getRaiz(), anchoPanel / 2, 34, anchoPanel / 4);
     }
 
     private void dibujarNodoArbol(Graphics2D g2, Node nodo, int x, int y, int offsetH) {
         if (nodo == null) {
             return;
         }
-        int nextY = y + 54;
-        int childOffset = Math.max(offsetH / 2, 58);
+        int sigY = y + 38;
+        int sigOffset = Math.max(offsetH / 2, 42);
 
-        g2.setStroke(new BasicStroke(1.8f));
-        g2.setColor(new Color(100, 116, 139));
         if (nodo.izquierdo != null) {
-            int leftX = x - offsetH;
-            g2.drawLine(x, y + 18, leftX, nextY - 12);
-            dibujarNodoArbol(g2, nodo.izquierdo, leftX, nextY, childOffset);
+            int izqX = x - offsetH;
+            g2.drawLine(x, y + 12, izqX, sigY - 12);
+            dibujarNodoArbol(g2, nodo.izquierdo, izqX, sigY, sigOffset);
         }
         if (nodo.derecho != null) {
-            int rightX = x + offsetH;
-            g2.drawLine(x, y + 18, rightX, nextY - 12);
-            dibujarNodoArbol(g2, nodo.derecho, rightX, nextY, childOffset);
+            int derX = x + offsetH;
+            g2.drawLine(x, y + 12, derX, sigY - 12);
+            dibujarNodoArbol(g2, nodo.derecho, derX, sigY, sigOffset);
         }
 
-        int boxW = 112;
-        int boxH = 38;
-        int bx = x - boxW / 2;
-        int by = y - boxH / 2;
+        int ancho = 92;
+        int alto = 24;
+        int rx = x - ancho / 2;
+        int ry = y - alto / 2;
 
-        String id = nodo.getIdClave();
-        boolean esResaltado = placaResaltada != null && id != null && placaResaltada.equalsIgnoreCase(id);
-
-        if (esResaltado) {
-            g2.setColor(new Color(254, 240, 138));
-        } else {
-            g2.setColor(new Color(239, 246, 255));
+        String texto = String.valueOf(nodo.datos);
+        boolean resaltado = false;
+        if (nodo.info instanceof Registro) {
+            Registro r = (Registro) nodo.info;
+            texto = r.getPlate();
+            resaltado = plateResaltado != null && plateResaltado.equalsIgnoreCase(r.getPlate());
         }
-        g2.fillRoundRect(bx, by, boxW, boxH, 10, 10);
 
-        g2.setColor(esResaltado ? new Color(202, 138, 4) : new Color(29, 78, 216));
-        g2.setStroke(new BasicStroke(2.0f));
-        g2.drawRoundRect(bx, by, boxW, boxH, 10, 10);
+        g2.setColor(resaltado ? Color.LIGHT_GRAY : Color.WHITE);
+        g2.fillRect(rx, ry, ancho, alto);
+        g2.setColor(Color.BLACK);
+        g2.setStroke(new BasicStroke(resaltado ? 2.0f : 1.0f));
+        g2.drawRect(rx, ry, ancho, alto);
+        g2.setStroke(new BasicStroke(1.0f));
 
-        g2.setColor(new Color(15, 23, 42));
         g2.setFont(new Font("Monospaced", Font.BOLD, 11));
-        FontMetrics fm = g2.getFontMetrics();
-        String txtId = id != null ? id : "";
-        g2.drawString(txtId, bx + (boxW - fm.stringWidth(txtId)) / 2, by + 16);
+        g2.drawString(texto, rx + 8, ry + 16);
+    }
 
-        g2.setColor(new Color(37, 99, 235));
-        g2.setFont(new Font("SansSerif", Font.PLAIN, 10));
-        String txtK = "k=" + nodo.getDato();
-        FontMetrics fmK = g2.getFontMetrics();
-        g2.drawString(txtK, bx + (boxW - fmK.stringWidth(txtK)) / 2, by + 31);
+    private void dibujarFlecha(Graphics2D g2, int x1, int y1, int x2, int y2) {
+        g2.drawLine(x1, y1, x2, y2);
+        int[] px = {x2, x2 - 6, x2 - 6};
+        int[] py = {y2, y2 - 4, y2 + 4};
+        g2.fillPolygon(px, py, 3);
     }
 }

@@ -1,12 +1,12 @@
-/*
-Copyright (c) 2019 - 2026, Juan Carlos Garcia Ojeda, Universidad de Cartagena
-All rights reserved.
-*/
 package co.edu.unicartagena.list;
 
+/**
+ * Estructura de Datos - Sesión 8 (Lista Enlazada Simple)
+ * Docente: Juan Carlos García-Ojeda
+ */
 public class Nodo<T> {
-    T dato;
-    Nodo<T> sig;
+    public T dato;
+    public Nodo<T> sig;
 
     public Nodo(T dato) {
         this.dato = dato;
@@ -28,9 +28,5 @@ public class Nodo<T> {
 
     public Nodo<T> getSig() {
         return this.sig;
-    }
-
-    public void setSig(Nodo<T> sig) {
-        this.sig = sig;
     }
 }
